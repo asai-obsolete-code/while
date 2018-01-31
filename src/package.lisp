@@ -5,7 +5,7 @@
 
 (in-package :cl-user)
 (defpackage while
-  (:export :while :if :oddp :binarize :diff :>))
+  (:export :while :if :oddp :binarize :binarize-f :diff :> :* :*-log))
 (defpackage while.impl
   (:use :cl :iterate :alexandria :trivia)
   (:shadowing-import-from :while :while))
@@ -34,8 +34,9 @@
                ,aux2 0))
        ,result)))
 
-(print (while:if 1 1 0))
-(print (while:if 0 1 0))
+(assert (= 1 (print (while:if 1 1 0))))
+(assert (= 1 (print (while:if 2 1 0))))
+(assert (= 0 (print (while:if 0 1 0))))
 
 (defun while:oddp (thing)
   "O(n)"
@@ -46,8 +47,8 @@
                         1))
             0))
 
-(print (while:oddp 5))
-(print (while:oddp 4))
+(assert (= 1 (print (while:oddp 5))))
+(assert (= 0 (print (while:oddp 4))))
 
 (defun while:> (a b)
   (let ((c (diff a b)))
@@ -55,8 +56,9 @@
               1
               0)))
 
-(print (while:> 5 4))
-(print (while:> 4 5))
+(assert (= 1 (print (while:> 5 4))))
+(assert (= 0 (print (while:> 4 5))))
+
 
 (defmacro while:binarize (thing d)
   (check-type d integer)
@@ -105,3 +107,46 @@
 
 (print (while:binarize 5 4))
 
+(defun while:binarize-f (thing d)
+  (if (= d 0)
+      (while:if thing
+                (progn (princ 1) 1)
+                (progn (princ 0) 0))
+      (let ((aux (diff thing (expt 2 d))))
+        (while:if aux
+                  (progn (princ 1) (while:binarize-f aux (1- d)))
+                  (progn (princ 0) (while:binarize-f thing (1- d)))))))
+
+(print (while:binarize-f 5 4))
+
+(defun while:* (a b)
+  (while:if b
+            (+ a (while:* a (diff b 1)))
+            0))
+
+(assert (= 50 (print (while:* 5 10))))
+(assert (= 0 (print (while:* 0 2))))
+
+(defun while:*-log (a b d)
+  (labels ((rec (acc b d)
+             (if (= d 0)
+                 (while:if b
+                           (+ acc a)
+                           acc)
+                 (let ((b-rem (diff (1+ b) (expt 2 d))))
+                   (while:if b-rem
+                             (rec (while:* (+ a acc) 2) (diff b-rem 1) (diff d 1))
+                             (rec (while:* acc 2) b (diff d 1)))))))
+    (rec 0 b d)))
+
+(print (while:*-log 3 0 4))
+(print (while:*-log 3 1 4))
+(print (while:*-log 3 2 4))
+(print (while:*-log 3 3 4))
+(print (while:*-log 3 4 4))
+(print (while:*-log 3 5 4))
+(print (while:*-log 3 6 4))
+(print (while:*-log 3 7 4))
+(print (while:*-log 3 8 4))
+
+(assert (= 6 (print (while:*-log 3 2 4))))

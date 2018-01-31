@@ -12,7 +12,6 @@
 \tolerance=1000
 \usepackage[pxjahyper]{}
 \usepackage{color}
-\usepackage[cache=false]{minted}
 \usepackage{listings}
 \author{Masataro Asai}
 \date{\textit{<2018-01-31>} }
@@ -26,8 +25,8 @@
 
 In order to verify the resulting program for the assignments, I implemented a
 WHILE-program compiler in Common Lisp.  To simplify the implementation, I opted
-to avoid the original ABI where the output is stored in , and instead just
-use the function return stack. This made the problem of returning multiple
+to avoid the original ABI where the output is stored in $v_0$, and instead just
+use the function return value. This made returning multiple
 values (in \texttt{binarize}) not possible, though.
 
 Since \texttt{while} requires a non-standard evaluation order, I implemented it as a macro.
@@ -97,7 +96,7 @@ Using \texttt{if}, implementing \texttt{>} is trivial.
 \section{\texttt{oddp}}
 \label{sec:org88529c7}
 
-Implemented \texttt{oddp} trivially, which is .
+Implemented \texttt{oddp} trivially, which is $O(n)$ for digit $n$.
 
 \lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
@@ -119,10 +118,12 @@ Implemented \texttt{oddp} trivially, which is .
 
 Due to the problem returning multiple values in a vector, I instead just printed it to the standard output.
 
-The following implementation constructs a decision tree with a decision node
-for each assuming the maximum binary digit of the given number
-is finite. It thus achieves . Using the similar technique I can also
-implement a logarithmic \texttt{oddp}.
+The following implementation constructs a decision tree with a decision
+node for each digit, assuming the maximum binary digit of the given
+number is finite \textbf{and given}. I could not come up with an idea to
+do this with an unbounded maximum digit.  It thus achieves $O(log n)$
+where $n$ is a digit. Using the similar technique I can also implement a
+logarithmic \texttt{oddp}.
 
 \lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
@@ -180,4 +181,19 @@ adding a new .
                                                       (PROGN (PRINC 1) 1)
                                                       (PROGN (PRINC 0) 0)))))))))))
 \end{lstlisting}
+
+\section{product}
+
+\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+(defun while:* (a b)
+  (while:if b
+            (+ a (while:* a (diff b 1)))
+            0))
+
+(print (while:* 5 10))
+\end{lstlisting}
+
+
+
 \end{document}
