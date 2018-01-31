@@ -12,7 +12,7 @@
 \tolerance=1000
 \usepackage[pxjahyper]{}
 \usepackage{color}
-\usepackage{listings}
+\usepackage{minted}
 \author{Masataro Asai}
 \date{\textit{<2018-01-31>} }
 \title{Assignment No.1}
@@ -32,8 +32,7 @@ values (in \texttt{binarize}) not possible, though.
 Since \texttt{while} requires a non-standard evaluation order, I implemented it as a macro.
 \texttt{diff} can be implemented straightforwardly as a function.
 
-\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
+\begin{minted}{lisp}
 (defpackage while
   (:export :while :if :oddp :binarize :diff :>))
 (defpackage while.impl
@@ -49,15 +48,14 @@ Since \texttt{while} requires a non-standard evaluation order, I implemented it 
      ,@body))
 
 (defun diff (a b) (max (- a b) 0))
-\end{lstlisting}
+\end{minted}
 
 \section{\texttt{if}}
 \label{sec:orgdd60bb7}
 
 Since \texttt{if} requires a non-standard evaluation order, I implemented it as a macro.
 
-\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
+\begin{minted}{lisp}
 (defmacro while:if (condition then else)
   (with-gensyms (aux aux2 result)
     `(let ((,aux 1) (,aux2 1) (,result 1))
@@ -74,15 +72,14 @@ Since \texttt{if} requires a non-standard evaluation order, I implemented it as 
 
 (print (while:if 1 1 0)) ; -> 1
 (print (while:if 0 1 0)) ; -> 0
-\end{lstlisting}
+\end{minted}
 
 \section{\texttt{>}}
 \label{sec:org209c9e2}
 
 Using \texttt{if}, implementing \texttt{>} is trivial.
 
-\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
+\begin{minted}{lisp}
 (defun while:> (a b)
   (let ((c (diff a b)))
     (while:if c
@@ -91,15 +88,14 @@ Using \texttt{if}, implementing \texttt{>} is trivial.
 
 (print (while:> 5 4)) ; -> 1
 (print (while:> 4 5)) ; -> 0
-\end{lstlisting}
+\end{minted}
 
 \section{\texttt{oddp}}
 \label{sec:org88529c7}
 
 Implemented \texttt{oddp} trivially, which is $O(n)$ for digit $n$.
 
-\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
+\begin{minted}{lisp}
 (defun while:oddp (thing)
   "O(n)"
   (while:if thing
@@ -111,7 +107,7 @@ Implemented \texttt{oddp} trivially, which is $O(n)$ for digit $n$.
 
 (print (while:oddp 5)) ; -> 1
 (print (while:oddp 4)) ; -> 0
-\end{lstlisting}
+\end{minted}
 
 \section{\texttt{binarize}}
 \label{sec:orgbd31612}
@@ -121,12 +117,11 @@ Due to the problem returning multiple values in a vector, I instead just printed
 The following implementation constructs a decision tree with a decision
 node for each digit, assuming the maximum binary digit of the given
 number is finite \textbf{and given}. I could not come up with an idea to
-do this with an unbounded maximum digit.  It thus achieves $O(log n)$
+do this with an unbounded maximum digit.  It thus achieves $O(\log n)$
 where $n$ is a digit. Using the similar technique I can also implement a
 logarithmic \texttt{oddp}.
 
-\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
+\begin{minted}{lisp}
 (defmacro while:binarize (thing d)
   (check-type d integer)
   (with-gensyms (aux)
@@ -141,14 +136,13 @@ logarithmic \texttt{oddp}.
 (print (while:binarize 5 4))
 ; => 00101
 ; -> 1
-\end{lstlisting}
+\end{minted}
 
 The result of expanding \texttt{(while:binarize 3 2)} is as follows. \texttt{with-gensyms}
-creates a new symbol which does not conflict to the existing symbols, similar to
-adding a new .
+creates a new symbol which does not conflict the existing symbols, similar to
+adding a new $v_k$.
 
-\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
+\begin{minted}{lisp}
 (LET ((#:THING1251 3))
   (LET ((#:AUX1250 (DIFF #:THING1251 (EXPT 2 2))))
     (WHILE:IF #:AUX1250
@@ -180,22 +174,24 @@ adding a new .
                                             (WHILE:IF #:THING1263
                                                       (PROGN (PRINC 1) 1)
                                                       (PROGN (PRINC 0) 0)))))))))))
-\end{lstlisting}
+\end{minted}
 
-\section{product}
+\section{Product}
 
-\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
+Here is a trivial $O(n)$ multiplication.
+
+\begin{minted}{lisp}
 (defun while:* (a b)
   (while:if b
             (+ a (while:* a (diff b 1)))
             0))
 
-(print (while:* 5 10))
-\end{lstlisting}
+(print (while:* 5 10)) ;=> 50
+\end{minted}
 
-\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
+Also the $O(\log n)$ multiplication.
+
+\begin{minted}{lisp}
 (defun while:*-log (a b d)
   (labels ((rec (acc b d)
              (if (= d 0)
@@ -204,8 +200,12 @@ adding a new .
                            acc)
                  (let ((b-rem (diff (1+ b) (expt 2 d))))
                    (while:if b-rem
-                             (rec (while:* (+ a acc) 2) (diff b-rem 1) (diff d 1))
-                             (rec (while:* acc 2) b (diff d 1)))))))
+                             (rec (while:* (+ a acc) 2)
+                                  (diff b-rem 1)
+                                  (diff d 1))
+                             (rec (while:* acc 2)
+                                  b
+                                  (diff d 1)))))))
     (rec 0 b d)))
 
 (print (while:*-log 3 0 4)) ; => 0
@@ -217,6 +217,6 @@ adding a new .
 (print (while:*-log 3 6 4)) ; => 18
 (print (while:*-log 3 7 4)) ; => 21
 (print (while:*-log 3 8 4)) ; => 24
-\end{lstlisting}
+\end{minted}
 
 \end{document}
