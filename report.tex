@@ -194,6 +194,29 @@ adding a new .
 (print (while:* 5 10))
 \end{lstlisting}
 
+\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+(defun while:*-log (a b d)
+  (labels ((rec (acc b d)
+             (if (= d 0)
+                 (while:if b
+                           (+ acc a)
+                           acc)
+                 (let ((b-rem (diff (1+ b) (expt 2 d))))
+                   (while:if b-rem
+                             (rec (while:* (+ a acc) 2) (diff b-rem 1) (diff d 1))
+                             (rec (while:* acc 2) b (diff d 1)))))))
+    (rec 0 b d)))
 
+(print (while:*-log 3 0 4)) ; => 0
+(print (while:*-log 3 1 4)) ; => 3
+(print (while:*-log 3 2 4)) ; => 6
+(print (while:*-log 3 3 4)) ; => 9
+(print (while:*-log 3 4 4)) ; => 12
+(print (while:*-log 3 5 4)) ; => 15
+(print (while:*-log 3 6 4)) ; => 18
+(print (while:*-log 3 7 4)) ; => 21
+(print (while:*-log 3 8 4)) ; => 24
+\end{lstlisting}
 
 \end{document}
