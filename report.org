@@ -1,9 +1,38 @@
-#|
-  This file is a part of while project.
-  Copyright (c) 2018 Masataro Asai (guicho2.71828@gmail.com)
-|#
 
-(in-package :cl-user)
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline author:t
+#+OPTIONS: broken-links:nil c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+OPTIONS: email:nil f:t inline:t num:t p:nil pri:nil prop:nil stat:t tags:t
+#+OPTIONS: tasks:t tex:nil timestamp:t title:t toc:nil todo:t |:t
+#+TITLE: Assignment No.1
+#+DATE: <2018-01-30 火>
+#+AUTHOR: Masataro Asai
+#+EMAIL: guicho2.71828@gmail.com
+#+LANGUAGE: en
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 25.1.1 (Org mode 9.1.2)
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER: 
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE: \today
+
+* Implementing a WHILE-program compiler in Common Lisp
+
+In order to verify the resulting program for the assignments, I implemented a
+WHILE-program compiler in Common Lisp.  To simplify the implementation, I opted
+to avoid the original ABI where the output is stored in $v_0$, and instead just
+use the function return stack. This made the problem of returning multiple
+values (in =binarize=) not possible, though.
+
+Since =while= requires a non-standard evaluation order, I implemented it as a macro.
+=diff= can be implemented straightforwardly as a function.
+
+#+begin_src lisp
 (defpackage while
   (:export :while :if :oddp :binarize :diff :>))
 (defpackage while.impl
@@ -19,7 +48,13 @@
      ,@body))
 
 (defun diff (a b) (max (- a b) 0))
+#+end_src
 
+* =if=
+
+Since =if= requires a non-standard evaluation order, I implemented it as a macro.
+
+#+begin_src lisp
 (defmacro while:if (condition then else)
   (with-gensyms (aux aux2 result)
     `(let ((,aux 1) (,aux2 1) (,result 1))
@@ -34,9 +69,30 @@
                ,aux2 0))
        ,result)))
 
-(print (while:if 1 1 0))
-(print (while:if 0 1 0))
+(print (while:if 1 1 0)) ; -> 1
+(print (while:if 0 1 0)) ; -> 0
+#+end_src
 
+* =>=
+
+Using =if=, implementing =>= is trivial.
+
+#+begin_src lisp
+(defun while:> (a b)
+  (let ((c (diff a b)))
+    (while:if c
+              1
+              0)))
+
+(print (while:> 5 4)) ; -> 1
+(print (while:> 4 5)) ; -> 0
+#+end_src
+
+* =oddp=
+
+Implemented =oddp= trivially, which is $O(n)$.
+
+#+begin_src lisp
 (defun while:oddp (thing)
   "O(n)"
   (while:if thing
@@ -46,18 +102,20 @@
                         1))
             0))
 
-(print (while:oddp 5))
-(print (while:oddp 4))
+(print (while:oddp 5)) ; -> 1
+(print (while:oddp 4)) ; -> 0
+#+end_src
 
-(defun while:> (a b)
-  (let ((c (diff a b)))
-    (while:if c
-              1
-              0)))
+* =binarize=
 
-(print (while:> 5 4))
-(print (while:> 4 5))
+Due to the problem returning multiple values in a vector, I instead just printed it to the standard output.
 
+The following implementation constructs a decision tree with a decision node
+$2^d$ for each $d<=D$ assuming the maximum binary digit $D$ of the given number
+is finite. It thus achieves $O(\log n)$. Using the similar technique I can also
+implement a logarithmic =oddp=.
+
+#+begin_src lisp
 (defmacro while:binarize (thing d)
   (check-type d integer)
   (with-gensyms (aux)
@@ -69,8 +127,16 @@
                        (progn (princ 1) (while:binarize ,aux ,(1- d)))
                        (progn (princ 0) (while:binarize ,thing ,(1- d)))))))))
 
-(print (sb-cltl2:macroexpand-all '(while:binarize 3 2)))
+(print (while:binarize 5 4))
+; => 00101
+; -> 1
+#+end_src
 
+The result of expanding =(while:binarize 5 4)= is as follows. =with-gensyms=
+creates a new symbol which does not conflict to the existing symbols, similar to
+adding a new $v_k$.
+
+#+begin_src lisp
 (LET ((#:THING1251 3))
   (LET ((#:AUX1250 (DIFF #:THING1251 (EXPT 2 2))))
     (WHILE:IF #:AUX1250
@@ -102,6 +168,4 @@
                                             (WHILE:IF #:THING1263
                                                       (PROGN (PRINC 1) 1)
                                                       (PROGN (PRINC 0) 0)))))))))))
-
-(print (while:binarize 5 4))
-
+#+end_src

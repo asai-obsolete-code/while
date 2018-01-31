@@ -1,9 +1,40 @@
-#|
-  This file is a part of while project.
-  Copyright (c) 2018 Masataro Asai (guicho2.71828@gmail.com)
-|#
+% Created 2018-01-31 水 09:40
+% Intended LaTeX compiler: pdflatex
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref,graphicx}
+\usepackage{helvet,times,courier}
+\tolerance=1000
+\usepackage[pxjahyper]{}
+\usepackage{color}
+\usepackage[cache=false]{minted}
+\usepackage{listings}
+\author{Masataro Asai}
+\date{\textit{<2018-01-31>} }
+\title{Assignment No.1}
+\begin{document}
 
-(in-package :cl-user)
+\maketitle
+
+\section{Implementing a WHILE-program compiler in Common Lisp}
+\label{sec:orgbfa9313}
+
+In order to verify the resulting program for the assignments, I implemented a
+WHILE-program compiler in Common Lisp.  To simplify the implementation, I opted
+to avoid the original ABI where the output is stored in , and instead just
+use the function return stack. This made the problem of returning multiple
+values (in \texttt{binarize}) not possible, though.
+
+Since \texttt{while} requires a non-standard evaluation order, I implemented it as a macro.
+\texttt{diff} can be implemented straightforwardly as a function.
+
+\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
 (defpackage while
   (:export :while :if :oddp :binarize :diff :>))
 (defpackage while.impl
@@ -19,7 +50,15 @@
      ,@body))
 
 (defun diff (a b) (max (- a b) 0))
+\end{lstlisting}
 
+\section{\texttt{if}}
+\label{sec:orgdd60bb7}
+
+Since \texttt{if} requires a non-standard evaluation order, I implemented it as a macro.
+
+\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
 (defmacro while:if (condition then else)
   (with-gensyms (aux aux2 result)
     `(let ((,aux 1) (,aux2 1) (,result 1))
@@ -34,9 +73,34 @@
                ,aux2 0))
        ,result)))
 
-(print (while:if 1 1 0))
-(print (while:if 0 1 0))
+(print (while:if 1 1 0)) ; -> 1
+(print (while:if 0 1 0)) ; -> 0
+\end{lstlisting}
 
+\section{\texttt{>}}
+\label{sec:org209c9e2}
+
+Using \texttt{if}, implementing \texttt{>} is trivial.
+
+\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+(defun while:> (a b)
+  (let ((c (diff a b)))
+    (while:if c
+              1
+              0)))
+
+(print (while:> 5 4)) ; -> 1
+(print (while:> 4 5)) ; -> 0
+\end{lstlisting}
+
+\section{\texttt{oddp}}
+\label{sec:org88529c7}
+
+Implemented \texttt{oddp} trivially, which is .
+
+\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
 (defun while:oddp (thing)
   "O(n)"
   (while:if thing
@@ -46,18 +110,22 @@
                         1))
             0))
 
-(print (while:oddp 5))
-(print (while:oddp 4))
+(print (while:oddp 5)) ; -> 1
+(print (while:oddp 4)) ; -> 0
+\end{lstlisting}
 
-(defun while:> (a b)
-  (let ((c (diff a b)))
-    (while:if c
-              1
-              0)))
+\section{\texttt{binarize}}
+\label{sec:orgbd31612}
 
-(print (while:> 5 4))
-(print (while:> 4 5))
+Due to the problem returning multiple values in a vector, I instead just printed it to the standard output.
 
+The following implementation constructs a decision tree with a decision node
+for each assuming the maximum binary digit of the given number
+is finite. It thus achieves . Using the similar technique I can also
+implement a logarithmic \texttt{oddp}.
+
+\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
 (defmacro while:binarize (thing d)
   (check-type d integer)
   (with-gensyms (aux)
@@ -69,8 +137,17 @@
                        (progn (princ 1) (while:binarize ,aux ,(1- d)))
                        (progn (princ 0) (while:binarize ,thing ,(1- d)))))))))
 
-(print (sb-cltl2:macroexpand-all '(while:binarize 3 2)))
+(print (while:binarize 5 4))
+; => 00101
+; -> 1
+\end{lstlisting}
 
+The result of expanding \texttt{(while:binarize 3 2)} is as follows. \texttt{with-gensyms}
+creates a new symbol which does not conflict to the existing symbols, similar to
+adding a new .
+
+\lstset{language=Lisp,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
 (LET ((#:THING1251 3))
   (LET ((#:AUX1250 (DIFF #:THING1251 (EXPT 2 2))))
     (WHILE:IF #:AUX1250
@@ -102,6 +179,5 @@
                                             (WHILE:IF #:THING1263
                                                       (PROGN (PRINC 1) 1)
                                                       (PROGN (PRINC 0) 0)))))))))))
-
-(print (while:binarize 5 4))
-
+\end{lstlisting}
+\end{document}
